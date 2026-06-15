@@ -56,18 +56,19 @@ class TelemetryLogger:
         s_hash: float,
         a_hash: float,
         t_entropy: float,
+        agent_id: str = "default",
         viscosity: float | None = None,
         z_score: float | None = None,
     ) -> None:
         # Preformat message; hot-path work kept minimal.
         if viscosity is None or z_score is None:
             msg = (
-                f"turn={turn} s_hash={s_hash} a_hash={a_hash} "
+                f"turn={turn} agent_id={agent_id} s_hash={s_hash} a_hash={a_hash} "
                 f"t_entropy={t_entropy}"
             )
         else:
             msg = (
-                f"turn={turn} s_hash={s_hash} a_hash={a_hash} "
+                f"turn={turn} agent_id={agent_id} s_hash={s_hash} a_hash={a_hash} "
                 f"t_entropy={t_entropy} viscosity={viscosity} z_score={z_score}"
             )
 

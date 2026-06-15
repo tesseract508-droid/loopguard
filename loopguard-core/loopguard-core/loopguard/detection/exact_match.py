@@ -40,7 +40,7 @@ class ExactStateDetector:
         if self._row > 0:
             existing = self._buf[: self._row]  # shape (k, 2)
             target = np.array((s_hash, a_hash), dtype=np.float32)  # shape (2,)
-            match_mask = np.all(existing == target, axis=1)  # shape (k,)
+            match_mask = np.all(np.isclose(existing, target, equal_nan=True), axis=1)  # shape (k,)
             if bool(np.any(match_mask)):
                 origin_t = int(np.argmax(match_mask))  # first matching row index
                 raise LoopInterruptException(

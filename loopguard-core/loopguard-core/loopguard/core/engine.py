@@ -83,7 +83,10 @@ class LoopGuardEngine:
                 raise
 
         session.turn += 1
-        telemetry_logger.info(
-            "loopguard_turn_complete",
-            extra={"agent_id": agent_id, "turn": session.turn},
+        telemetry_logger.log_turn(
+            turn=session.turn,
+            s_hash=s_hash,
+            a_hash=a_hash,
+            t_entropy=t_entropy,
+            agent_id=agent_id,
         )
