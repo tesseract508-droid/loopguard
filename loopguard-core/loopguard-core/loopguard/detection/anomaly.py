@@ -66,12 +66,9 @@ class AnomalyDetector:
             # var = M2 / n ; sigma = sqrt(var)
             var = self._M2 / self._n if self._n > 0 else 0.0
 
-            # Zero-variance guard: if sigma==0 => Z=0
-            if var <= 0.0:
-                z = 0.0
-            else:
-                sigma = float(np.sqrt(var))
-                z = (D - self._mean) / sigma
+            # Zero-variance guard: inject epsilon to safely allow Z to plummet on repeat exact states.
+            sigma = float(np.sqrt(var))
+            z = (D - self._mean) / (sigma + 1e-9)
 
             if z < -3.0:
                 # Estimate loop start as variance began dropping.
