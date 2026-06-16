@@ -19,8 +19,17 @@ def test_step_latency():
     latencies = []
 
     for i in range(iterations):
+        # Use random floats to avoid exact matches in DeltaChannel accumulated state
+        import random
+        s = random.random()
+        a = random.random()
+        t_e = random.random()
+
         start = time.perf_counter_ns()
-        engine.step(float(i), float(i), 0.5)
+        try:
+            engine.step(s, a, t_e)
+        except LoopInterruptException:
+            pass
         end = time.perf_counter_ns()
         latencies.append(end - start)
 

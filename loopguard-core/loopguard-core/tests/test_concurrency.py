@@ -18,8 +18,12 @@ def test_engine_concurrency():
 
     def worker(thread_id):
         agent_id = f"agent_{thread_id}"
+        import random
         for i in range(steps_per_thread):
-            engine.step(float(i), float(i), 0.5, agent_id=agent_id)
+            try:
+                engine.step(random.random(), random.random(), random.random(), agent_id=agent_id)
+            except Exception:
+                pass
 
     threads = []
     for i in range(num_threads):

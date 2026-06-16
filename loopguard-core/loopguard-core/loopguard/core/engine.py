@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import struct
 from dataclasses import dataclass, field
 from typing import Any, Dict
 
@@ -19,6 +20,10 @@ class AgentSession:
     turn: int = 0
     exact_detector: ExactStateDetector = field(default_factory=ExactStateDetector)
     anomaly_detector: AnomalyDetector = field(default_factory=AnomalyDetector)
+    # Bitwise accumulators for DeltaChannel
+    s_acc: int = 0
+    a_acc: int = 0
+    t_acc: int = 0
 
 
 class LoopGuardEngine:
@@ -42,6 +47,12 @@ class LoopGuardEngine:
         self._sessions[agent_id] = session
         return session
 
+    @staticmethod
+    def _resolve_bits(accumulated: int) -> float:
+        """Normalize accumulated bits back into flat continuous primitive space [0.0, 1.0]."""
+        # 32-bit normalization: (accumulated & 0xFFFFFFFF) / 0xFFFFFFFF
+        return float(accumulated & 0xFFFFFFFF) / 4294967295.0
+
     def step(
         self,
         s_hash: float,
@@ -51,10 +62,25 @@ class LoopGuardEngine:
     ) -> None:
         session = self._get_or_create_session(agent_id)
 
+        # DeltaChannel bitwise XOR mutation via struct
+        # Use 'f' for float32 (4 bytes), then interpret as 32-bit unsigned int 'I'
+        s_bits = struct.unpack("<I", struct.pack("<f", float(s_hash)))[0]
+        a_bits = struct.unpack("<I", struct.pack("<f", float(a_hash)))[0]
+        t_bits = struct.unpack("<I", struct.pack("<f", float(t_entropy)))[0]
+
+        session.s_acc ^= s_bits
+        session.a_acc ^= a_bits
+        session.t_acc ^= t_bits
+
+        # Resolve continuous primitives
+        s_resolved = self._resolve_bits(session.s_acc)
+        a_resolved = self._resolve_bits(session.a_acc)
+        t_resolved = self._resolve_bits(session.t_acc)
+
         state_vector: StateVector = StateVector(
-            s_hash=s_hash,
-            a_hash=a_hash,
-            t_entropy=t_entropy,
+            s_hash=s_resolved,
+            a_hash=a_resolved,
+            t_entropy=t_resolved,
             t=session.turn,
         )
         vector_array: np.ndarray = state_vector.to_numpy()
@@ -85,8 +111,8 @@ class LoopGuardEngine:
         session.turn += 1
         telemetry_logger.log_turn(
             turn=session.turn,
-            s_hash=s_hash,
-            a_hash=a_hash,
-            t_entropy=t_entropy,
+            s_hash=s_resolved,
+            a_hash=a_resolved,
+            t_entropy=t_resolved,
             agent_id=agent_id,
         )
